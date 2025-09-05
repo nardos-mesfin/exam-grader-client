@@ -18,12 +18,9 @@ function App() {
   }, []); // The empty array means this effect runs only once
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Exam Grader App</h1>
-        <p>API Status: <strong>{message}</strong></p>
-      </header>
-    </div>
+    <h1 className="text-4xl font-bold text-green-500">
+    Tailwind is working 🎉
+  </h1>
   );
 }
 
