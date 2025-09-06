@@ -21,38 +21,30 @@ const LoginPage = () => {
 
   // --- FORM SUBMISSION HANDLER ---
   const handleLogin = async (event) => {
-    // Prevent the default browser form submission (which reloads the page)
     event.preventDefault();
-    setLoading(true); // Disable the button
-    setErrors({}); // Clear previous errors
+    setLoading(true);
+    setErrors({});
 
     try {
-      // This is the Sanctum authentication flow:
-      // 1. "Knock on the door" to get a CSRF security cookie
+      // 1. Make the handshake request to the root-level URL.
       await api.get('/sanctum/csrf-cookie');
 
-      // 2. Attempt to log in with the user's credentials
-      await api.post('/login', { email, password });
+      // 2. Make the login request to the /api prefixed URL.
+      //    Both requests use the SAME Axios instance, ensuring cookie consistency.
+      await api.post('/api/login', { email, password });
 
-      // If login is successful, you would typically redirect the user
       console.log('Login Successful!');
-      // For now, we'll just log it. We'll add routing later.
-      window.location.pathname = "/dashboard"; // Temporary redirect
-
+      window.location.pathname = "/dashboard";
     } catch (error) {
-      // Handle errors from the API
       if (error.response && error.response.status === 422) {
-        // A 422 status means a validation error (e.g., email not found, wrong password)
         console.log('Validation Errors:', error.response.data.errors);
         setErrors(error.response.data.errors);
       } else {
-        // For other errors (e.g., server down)
         console.error('An unexpected error occurred:', error);
-        setErrors({ general: ['An unexpected error occurred. Please try again.'] });
+        setErrors({ general: ['The credentials do not match our records.'] });
       }
     } finally {
-      // This will run whether the login succeeds or fails
-      setLoading(false); // Re-enable the button
+      setLoading(false);
     }
   };
 
@@ -75,7 +67,6 @@ const LoginPage = () => {
             </p>
           </div>
           <div className="rounded-2xl bg-surface p-8 shadow-2xl">
-            {/* We attach our handleLogin function to the form's onSubmit event */}
             <form className="space-y-6" onSubmit={handleLogin}>
               <div>
                 <label className="text-sm font-medium leading-none text-subtle-text" htmlFor="email">
@@ -90,13 +81,12 @@ const LoginPage = () => {
                     id="email"
                     name="email"
                     placeholder="Enter your email"
-                    type="email" // Changed type to email for better validation
-                    value={email} // Bind the input's value to our state
-                    onChange={(e) => setEmail(e.target.value)} // Update state on change
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
-                {/* Display email validation errors if they exist */}
                 {errors.email && <p className="mt-2 text-sm text-red-500">{errors.email[0]}</p>}
               </div>
               <div>
@@ -113,12 +103,11 @@ const LoginPage = () => {
                     name="password"
                     placeholder="Enter your password"
                     type="password"
-                    value={password} // Bind the input's value to our state
-                    onChange={(e) => setPassword(e.target.value)} // Update state on change
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                     required
                   />
                 </div>
-                 {/* Display password validation errors if they exist */}
                 {errors.password && <p className="mt-2 text-sm text-red-500">{errors.password[0]}</p>}
               </div>
               {errors.general && <p className="text-sm text-red-500 text-center">{errors.general[0]}</p>}
@@ -131,7 +120,7 @@ const LoginPage = () => {
                 <button
                   className="flex w-full justify-center rounded-full bg-primary px-4 py-3 text-base font-bold text-background transition-transform duration-200 ease-in-out hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface disabled:opacity-50 disabled:scale-100"
                   type="submit"
-                  disabled={loading} // Disable the button when loading
+                  disabled={loading}
                 >
                   {loading ? 'Logging In...' : 'Log In'}
                 </button>
