@@ -9,7 +9,7 @@ module.exports = {
       colors: {
         'primary': '#38e07b',      // The bright green
         'background': '#111714',  // The darkest page background
-        'surface': '#1a231e',      // The lighter card background
+        'surface': '#1a231e',      // The lighter card background 'surface': '#29382f',
         'subtle-text': '#9eb7a8',  // The muted text color
       }
     },
