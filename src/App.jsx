@@ -4,6 +4,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import LoginPage from './pages/LoginPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx'; // <-- IMPORT THE BOUNCER
+import AuthLayout from './components/AuthLayout.jsx'; // <-- IMPORT LAYOUT
+import AnswerKeyPage from './pages/AnswerKeyPage.jsx'; // <-- IMPORT NEW PAGE
 import './App.css';
 
 function App() {
@@ -12,15 +14,20 @@ function App() {
       <Routes>
         <Route path="/" element={<LoginPage />} />
         
-        {/* THIS IS THE PROTECTED ROUTE */}
+        {/* PROTECTED ROUTES WRAPPED IN THE LAYOUT */}
         <Route
-          path="/dashboard"
+          path="/"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <AuthLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          {/* These are the "children" of the layout */}
+          <Route path="dashboard" element={<DashboardPage />} />
+          <Route path="answer-keys/create" element={<AnswerKeyPage />} />
+        </Route>
+
       </Routes>
     </BrowserRouter>
   );
