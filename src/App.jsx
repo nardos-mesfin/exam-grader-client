@@ -7,6 +7,7 @@ import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AuthLayout from './components/AuthLayout.jsx'; 
 import AnswerKeyPage from './pages/AnswerKeyPage.jsx'; 
 import UploadPage from './pages/UploadPage.jsx';
+import ReviewPage from './pages/ReviewPage.jsx';
 import './App.css';
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="answer-keys/create" element={<AnswerKeyPage />} />
           <Route path="exams/upload" element={<UploadPage />} /> 
+          <Route path="exams/review" element={<ReviewPage />} />
         </Route>
 
       </Routes>

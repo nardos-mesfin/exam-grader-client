@@ -1,9 +1,11 @@
 // src/pages/UploadPage.jsx
 import React, { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
+import { useNavigate } from 'react-router-dom';
 import api from '../api';
 
 const UploadPage = () => {
+  const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [exams, setExams] = useState([]);
   const [selectedExam, setSelectedExam] = useState('');
@@ -62,10 +64,24 @@ const UploadPage = () => {
 
         console.log(`Successfully graded ${file.name}:`, response.data);
         // Here you would update the file's state to "processed"
+
+         // 👇 THIS IS THE NEW PART 👇
+        // Instead of just logging, we navigate to the review page.
+        // We pass the AI grades and the image preview URL in the router's state.
+        navigate('/exams/review', { 
+          state: { 
+            results: response.data.ai_results, // Pass the whole results object
+            answer_key: response.data.answer_key,
+            imagePreview: file.preview,
+            examId: selectedExam,
+          } 
+        });
+        // We only upload one file for now, so we can break the loop.
+        break; 
         
       } catch (error) {
         console.error(`Failed to upload ${file.name}:`, error);
-        // Here you would update the file's state to "error"
+        alert('An error occurred during processing.'); // User-friendly alert
       }
     }
     setUploading(false);
