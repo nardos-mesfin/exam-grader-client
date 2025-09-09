@@ -44,48 +44,44 @@ const UploadPage = () => {
       return;
     }
     if (files.length === 0) {
-      alert('Please select files to upload.');
+      alert('Please select one or more pages to upload.');
       return;
     }
-
+  
     setUploading(true);
-
-    // We'll upload files one by one
-    for (const file of files) {
-      const formData = new FormData();
-      formData.append('exam_id', selectedExam);
-      formData.append('image', file);
-
-      try {
-        console.log(`Uploading ${file.name}...`);
-        const response = await api.post('/api/exam-submissions', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-        });
-
-        console.log(`Successfully graded ${file.name}:`, response.data);
-        // Here you would update the file's state to "processed"
-
-         // 👇 THIS IS THE NEW PART 👇
-        // Instead of just logging, we navigate to the review page.
-        // We pass the AI grades and the image preview URL in the router's state.
-        navigate('/exams/review', { 
-          state: { 
-            results: response.data.ai_results, // Pass the whole results object
-            answer_key: response.data.answer_key,
-            imagePreview: file.preview,
-            examId: selectedExam,
-          } 
-        });
-        // We only upload one file for now, so we can break the loop.
-        break; 
-        
-      } catch (error) {
-        console.error(`Failed to upload ${file.name}:`, error);
-        alert('An error occurred during processing.'); // User-friendly alert
-      }
+    
+    const formData = new FormData();
+    formData.append('exam_id', selectedExam);
+    
+    // Append each file to the FormData object, using an array notation
+    files.forEach((file) => {
+      formData.append(`pages[]`, file);
+    });
+  
+    try {
+      // We will call a single, smart endpoint that can handle one or more images
+      const response = await api.post('/api/exam-submissions/process', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+  
+      console.log(`Successfully graded multi-page exam:`, response.data);
+  
+      // Navigate to the review page with the consolidated results
+      navigate('/exams/review', { 
+        state: { 
+          results: response.data.ai_results,
+          answer_key: response.data.answer_key,
+          imagePreview: files[0]?.preview, // Still show the first page as the main preview
+          examId: selectedExam,
+        } 
+      });
+      
+    } catch (error) {
+      console.error(`Failed to upload exam:`, error);
+      alert('An error occurred during AI processing.');
+    } finally {
+      setUploading(false);
     }
-    setUploading(false);
-    alert('All uploads processed!');
   };
 
   return (
