@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ScoreInput from '../components/ScoreInput';
+import api from '../api';
 
 // Helper function to get color/status based on score.
 const getScoreStatus = (score, maxScore) => {
@@ -90,8 +91,40 @@ const ReviewPage = () => {
     handleScoreChange(selectedQuestionIndex, maxScore);
   };
   
-  const handleSaveFinalGrades = () => {
-    alert(`Grades saved! Final Score: ${totalScore} / ${totalPossibleMarks}`);
+  const handleSaveFinalGrades = async () => {
+    // Simple check to ensure we have the necessary data
+    if (!examId) {
+        alert('Error: Exam ID is missing. Cannot save.');
+        return;
+    }
+
+    // Prepare the data payload in the exact format our backend expects
+    const payload = {
+        exam_id: examId,
+        student_name: studentName,
+        final_score: totalScore,
+        total_possible_marks: totalPossibleMarks,
+        // We only need to send the essential data for each question
+        grades: grades.map(g => ({
+            question_number: g.question_number,
+            student_answer: g.student_answer,
+            score: g.score,
+        })),
+    };
+
+    try {
+        // Send the final, corrected data to our new endpoint
+        await api.post('/api/exam-results', payload);
+
+        // If successful, alert the user and navigate back to the dashboard
+        alert('Final grade has been saved successfully!');
+        navigate('/dashboard');
+
+    } catch (error) {
+        console.error("Failed to save final grade:", error);
+        // You can add more specific error handling here if needed
+        alert('An error occurred while saving the final grade. Please try again.');
+    }
   };
 
   if (!selectedQuestion) {
