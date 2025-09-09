@@ -60,7 +60,7 @@ const UploadPage = () => {
           headers: { 'Content-Type': 'multipart/form-data' }
         });
 
-        console.log(`Successfully processed ${file.name}:`, response.data.extracted_text);
+        console.log(`Successfully graded ${file.name}:`, response.data);
         // Here you would update the file's state to "processed"
         
       } catch (error) {
