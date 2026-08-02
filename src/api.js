@@ -4,7 +4,7 @@ import Cookies from 'js-cookie'; // Import the library
 
 // Create a single, unified Axios instance for the entire application.
 const api = axios.create({
-  baseURL: 'http://localhost:8000',
+  baseURL: '', // Vite proxy routes /api and /sanctum automatically!
   withCredentials: true,
 });
 

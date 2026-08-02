@@ -36,8 +36,8 @@ const AuthLayout = () => {
           <h2 className="text-white text-lg font-bold">GradeAssist</h2>
         </div>
         <nav className="flex flex-1 justify-center gap-2">
-          <a onClick={() => navigate('/dashboard')} className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-surface">Dashboard</a>
-          <a onClick={() => navigate('/answer-keys/create')} className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-subtle-text transition-colors hover:bg-surface hover:text-white">Exams</a>
+          <a onClick={() => navigate('/dashboard')} className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-surface">Dashboard</a>         
+          <a onClick={() => navigate('/exams')} className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-subtle-text transition-colors hover:bg-surface hover:text-white">Answer Key</a>
           <a onClick={() => navigate('/exams/upload')} className="cursor-pointer rounded-full px-4 py-2 text-sm font-medium text-subtle-text transition-colors hover:bg-surface hover:text-white">Exams</a>
           {/* ... other nav links ... */}
         </nav>
