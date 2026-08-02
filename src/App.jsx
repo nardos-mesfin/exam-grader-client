@@ -10,6 +10,9 @@ import ReviewPage from './pages/ReviewPage.jsx';
 import ProtectedRoute from './components/ProtectedRoute.jsx';
 import AuthLayout from './components/AuthLayout.jsx';
 import ExamResultsListPage from './pages/ExamResultsListPage.jsx';
+import StudentsListPage from './pages/StudentsListPage.jsx'; 
+import StudentDossierPage from './pages/StudentDossierPage.jsx'; 
+import ExportReportPage from './pages/ExportReportPage.jsx';
 import './App.css';
 
 function App() {
@@ -26,6 +29,9 @@ function App() {
           <Route path="exams/upload" element={<UploadPage />} />
           <Route path="exams/review" element={<ReviewPage />} />
           <Route path="exams/:id/results" element={<ExamResultsListPage />} />
+          <Route path="students" element={<StudentsListPage />} />
+          <Route path="students/:name" element={<StudentDossierPage />} />
+          <Route path="exams/:id/export" element={<ExportReportPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

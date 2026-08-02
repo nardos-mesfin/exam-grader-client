@@ -129,13 +129,24 @@ const ExamResultsListPage = () => {
             </p>
           </div>
 
-          <button
-            onClick={() => navigate('/exams/upload', { state: { selectedExamId: exam.id } })}
-            className="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-background transition-transform hover:scale-105"
-          >
-            <span className="material-symbols-outlined">add_a_photo</span>
-            <span>Grade New Student Exam</span>
-          </button>
+            {/* In ExamResultsListPage.jsx header buttons */}
+            <div className="flex items-center gap-3">
+            <button
+                onClick={() => navigate(`/exams/${exam.id}/export`)}
+                className="flex items-center justify-center gap-2 rounded-full border border-surface bg-surface px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-background"
+            >
+                <span className="material-symbols-outlined">download</span>
+                <span>Export Report</span>
+            </button>
+
+            <button
+                onClick={() => navigate('/exams/upload', { state: { selectedExamId: exam.id } })}
+                className="flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-background transition-transform hover:scale-105"
+            >
+                <span className="material-symbols-outlined">add_a_photo</span>
+                <span>Grade New Student Exam</span>
+            </button>
+            </div>
         </div>
 
         {/* Analytics Summary Cards */}
