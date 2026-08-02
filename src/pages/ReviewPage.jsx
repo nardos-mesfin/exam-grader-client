@@ -17,7 +17,6 @@ const ReviewPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // --- DATA INITIALIZATION & STATE ---
   const aiResults = location.state?.results || { student_name: 'Unnamed Student', grades: [] };
   const answerKey = location.state?.answer_key || [];
   
@@ -50,11 +49,8 @@ const ReviewPage = () => {
   
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
   const [filterMode, setFilterMode] = useState('status');
-
-  // Toggle state for editing OCR text
   const [isEditingText, setIsEditingText] = useState(false);
 
-  // --- MEMOIZED CALCULATIONS ---
   const { totalScore, totalPossibleMarks, scoreColorClass } = useMemo(() => {
     const totalPossible = answerKey.reduce((total, q) => total + (q.marks || 0), 0);
     const currentScore = grades.reduce((total, grade) => total + (Number(grade.score) || 0), 0);
@@ -70,9 +66,7 @@ const ReviewPage = () => {
 
   const categorizedQuestions = useMemo(() => {
     const needsReviewList = [];
-    const correct = [];
-    const partial = [];
-    const incorrect = [];
+    const correct = [], partial = [], incorrect = [];
 
     grades.forEach((grade, index) => {
       const status = getScoreStatus(grade.score, grade.possible_marks, grade.needs_review);
@@ -106,7 +100,6 @@ const ReviewPage = () => {
 
   const selectedQuestion = grades[selectedQuestionIndex];
 
-  // --- HANDLER FUNCTIONS ---
   const handleScoreChange = (index, newScore) => {
     const updatedGrades = grades.map((grade, i) =>
       i === index ? { ...grade, score: newScore, needs_review: false } : grade
@@ -114,7 +107,6 @@ const ReviewPage = () => {
     setGrades(updatedGrades);
   };
 
-  // Handler to update student answer text manually
   const handleStudentAnswerTextChange = (index, newAnswerText) => {
     const updatedGrades = grades.map((grade, i) =>
       i === index ? { ...grade, student_answer: newAnswerText, needs_review: false } : grade
@@ -171,7 +163,6 @@ const ReviewPage = () => {
     return (
       <div className="flex-1 p-10 text-center text-white">
         <h1 className="text-2xl font-bold">No Grading Data Found</h1>
-        <p className="mt-2 text-subtle-text">Please go back and upload an exam paper to begin the review process.</p>
         <button onClick={() => navigate('/exams/upload')} className="mt-6 rounded-full bg-primary px-6 py-3 text-base font-bold text-background">
           Go to Upload Page
         </button>
@@ -180,36 +171,36 @@ const ReviewPage = () => {
   }
 
   return (
-    <main className="flex flex-1 flex-col lg:flex-row gap-6 p-6">
-      {/* --- LEFT COLUMN: GRADING & CONTROLS --- */}
-      <div className="flex-1 flex flex-col gap-6 lg:w-1/2">
-        <div className="flex items-start justify-between">
+    <main className="flex flex-1 flex-col lg:flex-row gap-6 p-4 sm:p-6">
+      {/* Left Column: Controls & Questions */}
+      <div className="flex-1 flex flex-col gap-6 w-full lg:w-1/2">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col">
-            <h1 className="text-3xl font-bold">Exam Paper Review</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold">Exam Paper Review</h1>
             <div className="flex items-center gap-2 mt-2">
-              <label htmlFor="student-name-review" className="text-lg text-subtle-text">For Student:</label>
+              <label htmlFor="student-name-review" className="text-sm sm:text-lg text-subtle-text">For Student:</label>
               <input
                 id="student-name-review"
                 type="text"
-                className="form-input w-64 rounded-md border-surface bg-surface/50 px-3 py-1 text-lg font-bold text-white focus:border-primary focus:ring-primary"
+                className="form-input w-48 sm:w-64 rounded-md border-surface bg-surface/50 px-3 py-1 text-base sm:text-lg font-bold text-white focus:border-primary focus:ring-primary"
                 value={studentName}
                 onChange={(e) => setStudentName(e.target.value)}
               />
             </div>
           </div>
           
-          <div className={`text-xl font-bold bg-surface px-4 py-2 rounded-lg ${scoreColorClass}`}>
-            Total Score: {totalScore} / {totalPossibleMarks}
+          <div className={`text-lg sm:text-xl font-bold bg-surface px-4 py-2 rounded-lg ${scoreColorClass}`}>
+            Score: {totalScore} / {totalPossibleMarks}
           </div>
         </div>
 
-        {/* --- CURRENT QUESTION FOCUS CARD --- */}
-        <div className="flex flex-col gap-4 bg-surface p-6 rounded-xl">
+        {/* Focus Card */}
+        <div className="flex flex-col gap-4 bg-surface p-4 sm:p-6 rounded-xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <h3 className="text-xl font-bold text-white">Question {selectedQuestion.question_number}</h3>
+              <h3 className="text-lg sm:text-xl font-bold text-white">Question {selectedQuestion.question_number}</h3>
               {selectedQuestion.needs_review && (
-                <span className="rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 px-3 py-0.5 text-xs font-bold">
+                <span className="rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/40 px-2.5 py-0.5 text-[10px] sm:text-xs font-bold">
                   ⚠️ Needs Review
                 </span>
               )}
@@ -226,62 +217,59 @@ const ReviewPage = () => {
             />
           ) : (
             <>
-              <div className="grid grid-cols-2 gap-4 mt-2">
-                <div className="border-l-4 border-green-500 pl-4">
-                  <p className="text-sm text-green-400 font-semibold mb-1">Correct Answer</p>
-                  <p className="text-lg text-white font-mono bg-background/50 p-3 rounded-md min-h-[50px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                <div className="border-l-4 border-green-500 pl-3 sm:pl-4">
+                  <p className="text-xs sm:text-sm text-green-400 font-semibold mb-1">Correct Answer</p>
+                  <p className="text-base sm:text-lg text-white font-mono bg-background/50 p-2.5 sm:p-3 rounded-md min-h-[46px] break-words">
                     {selectedQuestion.correct_answer}
                   </p>
                 </div>
-                <div className={`border-l-4 pl-4 ${ {red: 'border-red-500', yellow: 'border-yellow-500', green: 'border-green-500', amber: 'border-amber-500'}[getScoreStatus(selectedQuestion.score, selectedQuestion.possible_marks, selectedQuestion.needs_review).color] }`}>
-                  
-                  {/* Student Answer Header + Edit Pencil Button */}
+                <div className={`border-l-4 pl-3 sm:pl-4 ${ {red: 'border-red-500', yellow: 'border-yellow-500', green: 'border-green-500', amber: 'border-amber-500'}[getScoreStatus(selectedQuestion.score, selectedQuestion.possible_marks, selectedQuestion.needs_review).color] }`}>
                   <div className="flex items-center justify-between mb-1">
-                    <p className={`text-sm font-semibold ${ {red: 'text-red-400', yellow: 'text-yellow-400', green: 'text-green-400', amber: 'text-amber-400'}[getScoreStatus(selectedQuestion.score, selectedQuestion.possible_marks, selectedQuestion.needs_review).color] }`}>
+                    <p className={`text-xs sm:text-sm font-semibold ${ {red: 'text-red-400', yellow: 'text-yellow-400', green: 'text-green-400', amber: 'text-amber-400'}[getScoreStatus(selectedQuestion.score, selectedQuestion.possible_marks, selectedQuestion.needs_review).color] }`}>
                       Student's Answer
                     </p>
                     <button
                       onClick={() => setIsEditingText(!isEditingText)}
                       className="text-xs text-primary hover:underline flex items-center gap-1 font-semibold"
-                      title="Edit OCR Text"
                     >
                       <span className="material-symbols-outlined text-sm">edit</span>
                       <span>{isEditingText ? 'Done' : 'Edit Text'}</span>
                     </button>
                   </div>
 
-                  {/* Inline Editable Input vs Static Display */}
                   {isEditingText ? (
                     <input
                       type="text"
-                      className="form-input w-full text-lg text-white font-mono bg-background p-3 rounded-md border-2 border-primary focus:ring-0"
+                      className="form-input w-full text-base sm:text-lg text-white font-mono bg-background p-2.5 sm:p-3 rounded-md border-2 border-primary focus:ring-0"
                       value={selectedQuestion.student_answer}
                       onChange={(e) => handleStudentAnswerTextChange(selectedQuestionIndex, e.target.value)}
                     />
                   ) : (
-                    <p className="text-lg text-white font-mono bg-background/50 p-3 rounded-md min-h-[50px]">
+                    <p className="text-base sm:text-lg text-white font-mono bg-background/50 p-2.5 sm:p-3 rounded-md min-h-[46px] break-words">
                       {selectedQuestion.student_answer}
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="flex items-center justify-between bg-background/50 p-4 rounded-lg mt-4">
+              {/* Action Bar (Stack vertically on mobile so buttons don't cut off) */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-background/50 p-3 sm:p-4 rounded-lg mt-4 gap-3">
                 <ScoreInput
                   score={selectedQuestion.score}
                   maxScore={selectedQuestion.possible_marks}
                   onScoreChange={(newScore) => handleScoreChange(selectedQuestionIndex, newScore)}
                 />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-end gap-2">
                   {selectedQuestion.score < selectedQuestion.possible_marks ? (
-                    <button onClick={markAsCorrect} className="flex items-center gap-2 rounded-full h-10 px-4 bg-green-500/10 text-green-400 hover:bg-green-500/20 text-sm font-medium transition-colors">
+                    <button onClick={markAsCorrect} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-full h-10 px-4 bg-green-500/10 text-green-400 hover:bg-green-500/20 text-xs sm:text-sm font-medium transition-colors">
                       <span className="material-symbols-outlined text-base">check_circle</span>
-                      <span>Mark as Correct</span>
+                      <span>Mark Correct</span>
                     </button>
                   ) : (
-                    <button onClick={markAsIncorrect} className="flex items-center gap-2 rounded-full h-10 px-4 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-sm font-medium transition-colors">
+                    <button onClick={markAsIncorrect} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-full h-10 px-4 bg-red-500/10 text-red-400 hover:bg-red-500/20 text-xs sm:text-sm font-medium transition-colors">
                       <span className="material-symbols-outlined text-base">cancel</span>
-                      <span>Mark as Incorrect</span>
+                      <span>Mark Incorrect</span>
                     </button>
                   )}
                 </div>
@@ -290,13 +278,13 @@ const ReviewPage = () => {
           )}
         </div>
 
-        {/* --- ALL QUESTIONS OVERVIEW --- */}
+        {/* All Questions Overview */}
         <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">All Questions</h2>
-            <div className="flex items-center gap-2 rounded-full bg-surface p-1">
-              <button onClick={() => setFilterMode('status')} className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${filterMode === 'status' ? 'bg-primary text-background' : 'text-subtle-text hover:bg-background/50'}`}>By Status</button>
-              <button onClick={() => setFilterMode('type')} className={`px-4 py-1.5 text-sm font-semibold rounded-full transition-colors ${filterMode === 'type' ? 'bg-primary text-background' : 'text-subtle-text hover:bg-background/50'}`}>By Type</button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-xl sm:text-2xl font-bold">All Questions</h2>
+            <div className="flex items-center gap-1.5 rounded-full bg-surface p-1">
+              <button onClick={() => setFilterMode('status')} className={`px-3 py-1 text-xs sm:text-sm font-semibold rounded-full transition-colors ${filterMode === 'status' ? 'bg-primary text-background' : 'text-subtle-text hover:bg-background/50'}`}>By Status</button>
+              <button onClick={() => setFilterMode('type')} className={`px-3 py-1 text-xs sm:text-sm font-semibold rounded-full transition-colors ${filterMode === 'type' ? 'bg-primary text-background' : 'text-subtle-text hover:bg-background/50'}`}>By Type</button>
             </div>
           </div>
           
@@ -305,13 +293,13 @@ const ReviewPage = () => {
               <>
                 {categorizedQuestions.needsReviewList.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="text-sm font-bold text-amber-400 mb-2 flex items-center gap-1.5">
+                    <h3 className="text-xs sm:text-sm font-bold text-amber-400 mb-2 flex items-center gap-1.5">
                       <span>⚠️ NEEDS TEACHER REVIEW</span>
-                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs">
+                      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px]">
                         {categorizedQuestions.needsReviewList.length}
                       </span>
                     </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                       {categorizedQuestions.needsReviewList.map((grade) => (
                         <QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />
                       ))}
@@ -319,32 +307,32 @@ const ReviewPage = () => {
                   </div>
                 )}
 
-                {categorizedQuestions.incorrect.length > 0 && (<div><h3 className="text-sm font-bold text-red-400 mb-2">INCORRECT</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{categorizedQuestions.incorrect.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
-                {categorizedQuestions.partial.length > 0 && (<div className="mt-4"><h3 className="text-sm font-bold text-yellow-400 mb-2">PARTIAL CREDIT</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{categorizedQuestions.partial.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
-                {categorizedQuestions.correct.length > 0 && (<div className="mt-4"><h3 className="text-sm font-bold text-green-400 mb-2">CORRECT</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{categorizedQuestions.correct.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {categorizedQuestions.incorrect.length > 0 && (<div><h3 className="text-xs sm:text-sm font-bold text-red-400 mb-2">INCORRECT</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{categorizedQuestions.incorrect.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {categorizedQuestions.partial.length > 0 && (<div className="mt-4"><h3 className="text-xs sm:text-sm font-bold text-yellow-400 mb-2">PARTIAL CREDIT</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{categorizedQuestions.partial.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {categorizedQuestions.correct.length > 0 && (<div className="mt-4"><h3 className="text-xs sm:text-sm font-bold text-green-400 mb-2">CORRECT</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{categorizedQuestions.correct.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
               </>
             ) : (
               <>
-                {questionsByType.SHORT.length > 0 && (<div><h3 className="text-sm font-bold text-blue-400 mb-2">SHORT ANSWER</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{questionsByType.SHORT.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
-                {questionsByType.MCQ.length > 0 && (<div className="mt-4"><h3 className="text-sm font-bold text-purple-400 mb-2">MULTIPLE CHOICE</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{questionsByType.MCQ.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
-                {questionsByType.TF.length > 0 && (<div className="mt-4"><h3 className="text-sm font-bold text-indigo-400 mb-2">TRUE / FALSE</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{questionsByType.TF.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
-                {questionsByType.MATCH.length > 0 && (<div className="mt-4"><h3 className="text-sm font-bold text-teal-400 mb-2">MATCHING</h3><div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">{questionsByType.MATCH.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {questionsByType.SHORT.length > 0 && (<div><h3 className="text-xs sm:text-sm font-bold text-blue-400 mb-2">SHORT ANSWER</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{questionsByType.SHORT.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {questionsByType.MCQ.length > 0 && (<div className="mt-4"><h3 className="text-xs sm:text-sm font-bold text-purple-400 mb-2">MULTIPLE CHOICE</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{questionsByType.MCQ.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {questionsByType.TF.length > 0 && (<div className="mt-4"><h3 className="text-xs sm:text-sm font-bold text-indigo-400 mb-2">TRUE / FALSE</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{questionsByType.TF.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
+                {questionsByType.MATCH.length > 0 && (<div className="mt-4"><h3 className="text-xs sm:text-sm font-bold text-teal-400 mb-2">MATCHING</h3><div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">{questionsByType.MATCH.map((grade) => (<QuestionCard key={grade.originalIndex} grade={grade} isSelected={selectedQuestionIndex === grade.originalIndex} onClick={() => setSelectedQuestionIndex(grade.originalIndex)} />))}</div></div>)}
               </>
             )}
           </div>
         </div>
         
         <div className="mt-auto flex justify-end pt-6">
-          <button onClick={handleSaveFinalGrades} className="rounded-full bg-primary px-8 py-3 text-base font-bold text-background transition-transform hover:scale-105">
+          <button onClick={handleSaveFinalGrades} className="w-full sm:w-auto rounded-full bg-primary px-8 py-3.5 text-base font-bold text-background transition-transform hover:scale-105">
             {submissionId ? 'Update Student Grade' : 'Save Final Grade'}
           </button>
         </div>
       </div>
 
       {/* --- RIGHT COLUMN: SCANNED EXAM PAPER --- */}
-      <div className="flex-1 flex flex-col gap-4 bg-surface rounded-xl p-4 sticky top-6 h-[calc(100vh-6rem)] lg:w-1/2">
+      <div className="flex-1 flex flex-col gap-4 bg-surface rounded-xl p-4 lg:sticky top-6 h-[50vh] sm:h-[60vh] lg:h-[calc(100vh-6rem)] w-full lg:w-1/2">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Scanned Exam Paper</h2>
+          <h2 className="text-lg sm:text-xl font-bold">Scanned Exam Paper</h2>
           <span className="text-xs font-semibold text-subtle-text bg-background px-3 py-1 rounded-full">
             {imagePreviews.length} Page{imagePreviews.length > 1 ? 's' : ''}
           </span>
@@ -356,7 +344,7 @@ const ReviewPage = () => {
               <button
                 key={idx}
                 onClick={() => setSelectedImageIndex(idx)}
-                className={`px-4 py-1.5 rounded-full text-xs font-bold transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
                   selectedImageIndex === idx
                     ? 'bg-primary text-background shadow-md'
                     : 'bg-background text-subtle-text hover:text-white'
@@ -396,14 +384,14 @@ const QuestionCard = ({ grade, isSelected, onClick }) => {
   };
 
   return (
-    <div onClick={onClick} className={`flex flex-col gap-3 p-4 rounded-lg bg-surface border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}>
+    <div onClick={onClick} className={`flex flex-col gap-2 p-3 sm:p-4 rounded-lg bg-surface border-2 transition-colors cursor-pointer ${isSelected ? 'border-primary' : 'border-transparent hover:border-primary/50'}`}>
       <div className="flex items-center justify-between">
-        <p className="font-semibold text-white">Question {grade.question_number}</p>
-        <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${colorClasses[status.color]}`}>
+        <p className="font-semibold text-white text-xs sm:text-sm">Q{grade.question_number}</p>
+        <span className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-medium ${colorClasses[status.color]}`}>
           {status.text}
         </span>
       </div>
-      <p className="text-sm text-subtle-text truncate">{grade.student_answer}</p>
+      <p className="text-xs text-subtle-text truncate">{grade.student_answer}</p>
     </div>
   );
 };

@@ -13,6 +13,7 @@ import ExamResultsListPage from './pages/ExamResultsListPage.jsx';
 import StudentsListPage from './pages/StudentsListPage.jsx'; 
 import StudentDossierPage from './pages/StudentDossierPage.jsx'; 
 import ExportReportPage from './pages/ExportReportPage.jsx';
+import SettingsPage from './pages/SettingsPage.jsx';
 import './App.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="students" element={<StudentsListPage />} />
           <Route path="students/:name" element={<StudentDossierPage />} />
           <Route path="exams/:id/export" element={<ExportReportPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
