@@ -134,7 +134,7 @@ const ReviewPage = () => {
       total_possible_marks: totalPossibleMarks,
       grades: grades.map((g) => ({
         question_number: g.question_number,
-        student_answer: g.student_answer,
+        student_answer: g.student_answer || '',
         score: g.score,
       })),
     };
