@@ -126,19 +126,19 @@ const ReviewPage = () => {
       alert('Error: Missing Exam ID. Cannot save.');
       return;
     }
-
+  
     const payload = {
       exam_id: examId,
       student_name: studentName,
       final_score: totalScore,
       total_possible_marks: totalPossibleMarks,
-      grades: grades.map(g => ({
+      grades: grades.map((g) => ({
         question_number: g.question_number,
         student_answer: g.student_answer,
         score: g.score,
       })),
     };
-
+  
     try {
       if (submissionId) {
         await api.put(`/api/exam-submissions/${submissionId}`, payload);
@@ -155,7 +155,15 @@ const ReviewPage = () => {
       }
     } catch (error) {
       console.error('Failed to save final grade:', error);
-      alert('An error occurred while saving the grade. Please try again.');
+      
+      // 👇 SHOWS EXACT SERVER ERROR MESSAGE ON PHONE SCREEN ALERT 👇
+      const serverMessage =
+        error.response?.data?.message ||
+        error.response?.data?.error ||
+        error.message ||
+        'Unknown Error';
+  
+      alert(`Failed to save grade:\n${serverMessage}`);
     }
   };
 
