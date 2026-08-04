@@ -1,47 +1,53 @@
 // src/utils/formatError.js
 
 /**
- * Extracts ONLY the short, human-readable error message string from backend JSON responses.
+ * Extracts clean, human-readable error messages for Toast banners.
  */
 export const formatBackendError = (error) => {
-    // 1. If Network / Wi-Fi Error (Server not reachable)
+    // 1. Network / Wi-Fi Disconnected
     if (!error.response) {
       return error.message || 'Network Error - Server Unreachable';
     }
   
     const data = error.response?.data;
+    let rawMessage = '';
   
-    // 2. If data is an object, extract the exact message string
     if (typeof data === 'object' && data !== null) {
-      
-      // A. Check if Google Gemini returned a specific API error message
-      const googleMessage =
+      rawMessage =
         data.error_details?.error?.message ||
         data.error?.error?.message ||
-        data.error?.message;
-  
-      if (googleMessage && typeof googleMessage === 'string') {
-        return googleMessage;
-      }
-  
-      // B. Check if Laravel returned validation errors (return the first validation message)
-      if (data.errors && typeof data.errors === 'object') {
-        const firstValidationError = Object.values(data.errors).flat()[0];
-        if (firstValidationError) {
-          return firstValidationError;
-        }
-      }
-  
-      // C. Check top-level Laravel response message
-      if (data.message && typeof data.message === 'string') {
-        return data.message;
-      }
+        data.error?.message ||
+        (data.errors && Object.values(data.errors).flat()[0]) ||
+        data.message ||
+        '';
+    } else if (typeof data === 'string') {
+      rawMessage = data;
     }
   
-    // 3. Fallback for raw HTML/Text 500 error pages
-    if (typeof data === 'string' && data.length < 150) {
-      return data;
+    if (!rawMessage) {
+      return `Server Error (${error.response.status}): ${error.response.statusText || 'Unexpected error'}`;
     }
   
-    return `Server Error (${error.response.status})`;
+    const str = String(rawMessage);
+  
+    // 2. Shortcuts for common AI / Server timeouts
+    if (str.includes('RESOURCE_EXHAUSTED') || str.includes('Quota exceeded')) {
+      return 'Quota Exceeded: Gemini AI free daily limit reached.';
+    }
+    if (str.includes('API_KEY_INVALID') || str.includes('API key not valid')) {
+      return 'Invalid API Key: Please check your key in Settings.';
+    }
+    if (str.includes('cURL error 28') || str.includes('Maximum execution time')) {
+      return 'Server Timeout: AI request took too long. Please try again.';
+    }
+  
+    // 3. For ANY OTHER UNKNOWN ERROR:
+    // Clean up technical PHP/SQL code clutter and return up to 180 characters
+    const cleanStr = str
+      .replace(/^[a-zA-Z0-9_\\\]*Exception:\s*/, '') // Removes "Symfony\...\QueryException:"
+      .replace(/^SQLSTATE\[.*?\]:\s*/, '')          // Removes "SQLSTATE[HY000]:"
+      .replace(/[\r\n]+/g, ' ')                      // Replaces newlines with spaces
+      .trim();
+  
+    return cleanStr.length > 180 ? `${cleanStr.substring(0, 177)}...` : cleanStr;
   };
