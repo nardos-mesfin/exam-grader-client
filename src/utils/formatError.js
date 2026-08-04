@@ -1,49 +1,47 @@
 // src/utils/formatError.js
 
 /**
- * Universally formats any Axios error / backend JSON response into a clear readable string.
+ * Extracts ONLY the short, human-readable error message string from backend JSON responses.
  */
 export const formatBackendError = (error) => {
-    // 1. If no response from server (Network / Wi-Fi disconnected)
+    // 1. If Network / Wi-Fi Error (Server not reachable)
     if (!error.response) {
       return error.message || 'Network Error - Server Unreachable';
     }
   
-    const data = error.response.data;
+    const data = error.response?.data;
   
-    // 2. If backend returned a JSON response object
+    // 2. If data is an object, extract the exact message string
     if (typeof data === 'object' && data !== null) {
       
-      // If backend returned Laravel validation errors
+      // A. Check if Google Gemini returned a specific API error message
+      const googleMessage =
+        data.error_details?.error?.message ||
+        data.error?.error?.message ||
+        data.error?.message;
+  
+      if (googleMessage && typeof googleMessage === 'string') {
+        return googleMessage;
+      }
+  
+      // B. Check if Laravel returned validation errors (return the first validation message)
       if (data.errors && typeof data.errors === 'object') {
-        const validationList = Object.values(data.errors).flat().join('\n• ');
-        return `${data.message || 'Validation Error'}:\n• ${validationList}`;
+        const firstValidationError = Object.values(data.errors).flat()[0];
+        if (firstValidationError) {
+          return firstValidationError;
+        }
       }
   
-      // If backend returned nested error details
-      if (data.error_details) {
-        const details = typeof data.error_details === 'object'
-          ? JSON.stringify(data.error_details, null, 2)
-          : data.error_details;
-        return `${data.message || 'Error'}\n\nDetails:\n${details}`;
-      }
-  
-      if (data.error) {
-        const errStr = typeof data.error === 'object'
-          ? JSON.stringify(data.error, null, 2)
-          : data.error;
-        return `${data.message || 'Error'}\n\nDetails:\n${errStr}`;
-      }
-  
-      // If backend returned a simple message
+      // C. Check top-level Laravel response message
       if (data.message && typeof data.message === 'string') {
         return data.message;
       }
-  
-      // Fallback: Pretty-print the entire raw JSON from backend
-      return JSON.stringify(data, null, 2);
     }
   
-    // 3. Fallback for raw HTML 500 error pages
-    return `Server Error (${error.response.status}):\n${String(data).substring(0, 200)}`;
+    // 3. Fallback for raw HTML/Text 500 error pages
+    if (typeof data === 'string' && data.length < 150) {
+      return data;
+    }
+  
+    return `Server Error (${error.response.status})`;
   };
