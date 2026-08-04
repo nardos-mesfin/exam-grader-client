@@ -3,6 +3,7 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useNavigate, useLocation } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
+import { formatBackendError } from '../utils/formatError';
 import api from '../api';
 
 // Helper to convert File/Blob into a permanent Base64 Data URL
@@ -208,13 +209,7 @@ const UploadPage = () => {
       });
     } catch (error) {
       console.error('Failed to process exam paper:', error);
-      const serverMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        'Unknown error';
-
-      alert(`AI Grading Error:\n${serverMessage}`);
+      alert(`AI Grading Error:\n\n${formatBackendError(error)}`);
     } finally {
       setUploading(false);
     }

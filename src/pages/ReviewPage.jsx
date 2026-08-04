@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ScoreInput from '../components/ScoreInput';
 import MatchingCorrectionUI from '../components/MatchingCorrectionUI';
+import { useToast } from '../context/ToastContext'; // <-- Custom Toast
+import { formatBackendError } from '../utils/formatError';
 import api from '../api';
 
 const getScoreStatus = (score, maxScore, needsReview) => {
@@ -16,6 +18,7 @@ const getScoreStatus = (score, maxScore, needsReview) => {
 const ReviewPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const aiResults = location.state?.results || { student_name: 'Unnamed Student', grades: [] };
   const answerKey = location.state?.answer_key || [];
@@ -114,6 +117,15 @@ const ReviewPage = () => {
     setGrades(updatedGrades);
   };
 
+  // Quick Confirm AI Grade (Removes needs_review flag and approves AI score)
+  const confirmAiGrade = () => {
+    const updatedGrades = grades.map((grade, i) =>
+      i === selectedQuestionIndex ? { ...grade, needs_review: false } : grade
+    );
+    setGrades(updatedGrades);
+    showToast(`Question ${selectedQuestion.question_number} approved!`, 'success');
+  };
+
   const markAsIncorrect = () => handleScoreChange(selectedQuestionIndex, 0);
 
   const markAsCorrect = () => {
@@ -123,29 +135,29 @@ const ReviewPage = () => {
   
   const handleSaveFinalGrades = async () => {
     if (!examId && !submissionId) {
-      alert('Error: Missing Exam ID. Cannot save.');
+      showToast('Error: Missing Exam ID. Cannot save.', 'error');
       return;
     }
-  
+
     const payload = {
       exam_id: examId,
       student_name: studentName,
       final_score: totalScore,
       total_possible_marks: totalPossibleMarks,
-      grades: grades.map((g) => ({
+      grades: grades.map(g => ({
         question_number: g.question_number,
-        student_answer: g.student_answer || '',
+        student_answer: g.student_answer,
         score: g.score,
       })),
     };
-  
+
     try {
       if (submissionId) {
         await api.put(`/api/exam-submissions/${submissionId}`, payload);
-        alert('Student grade updated successfully!');
+        showToast('Student grade updated successfully!', 'success');
       } else {
         await api.post('/api/exam-results', payload);
-        alert('Final grade has been saved successfully!');
+        showToast('Final grade saved successfully!', 'success');
       }
       
       if (examId) {
@@ -155,15 +167,7 @@ const ReviewPage = () => {
       }
     } catch (error) {
       console.error('Failed to save final grade:', error);
-      
-      // 👇 SHOWS EXACT SERVER ERROR MESSAGE ON PHONE SCREEN ALERT 👇
-      const serverMessage =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        error.message ||
-        'Unknown Error';
-  
-      alert(`Failed to save grade:\n${serverMessage}`);
+      showToast(`Failed to save grade:\n${formatBackendError(error)}`, 'error');
     }
   };
 
@@ -180,8 +184,8 @@ const ReviewPage = () => {
 
   return (
     <main className="flex flex-1 flex-col lg:flex-row gap-6 p-4 sm:p-6">
-      {/* Left Column: Controls & Questions */}
-      <div className="flex-1 flex flex-col gap-6 w-full lg:w-1/2">
+      {/* --- LEFT COLUMN: GRADING & CONTROLS --- */}
+      <div className="flex-1 flex flex-col gap-6 lg:w-1/2">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col">
             <h1 className="text-2xl sm:text-3xl font-bold">Exam Paper Review</h1>
@@ -202,7 +206,7 @@ const ReviewPage = () => {
           </div>
         </div>
 
-        {/* Focus Card */}
+        {/* --- CURRENT QUESTION FOCUS CARD --- */}
         <div className="flex flex-col gap-4 bg-surface p-4 sm:p-6 rounded-xl">
           <div className="flex justify-between items-center">
             <div className="flex items-center gap-2">
@@ -261,14 +265,26 @@ const ReviewPage = () => {
                 </div>
               </div>
 
-              {/* Action Bar (Stack vertically on mobile so buttons don't cut off) */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between bg-background/50 p-3 sm:p-4 rounded-lg mt-4 gap-3">
                 <ScoreInput
                   score={selectedQuestion.score}
                   maxScore={selectedQuestion.possible_marks}
                   onScoreChange={(newScore) => handleScoreChange(selectedQuestionIndex, newScore)}
                 />
-                <div className="flex items-center justify-end gap-2">
+                
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  {/* 👇 QUICK APPROVE BUTTON IF QUESTION NEEDS REVIEW 👇 */}
+                  {selectedQuestion.needs_review && (
+                    <button
+                      onClick={confirmAiGrade}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-full h-10 px-4 bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 text-xs sm:text-sm font-bold transition-colors"
+                      title="Approve AI Grade"
+                    >
+                      <span className="material-symbols-outlined text-base">task_alt</span>
+                      <span>Confirm AI Grade</span>
+                    </button>
+                  )}
+
                   {selectedQuestion.score < selectedQuestion.possible_marks ? (
                     <button onClick={markAsCorrect} className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 rounded-full h-10 px-4 bg-green-500/10 text-green-400 hover:bg-green-500/20 text-xs sm:text-sm font-medium transition-colors">
                       <span className="material-symbols-outlined text-base">check_circle</span>

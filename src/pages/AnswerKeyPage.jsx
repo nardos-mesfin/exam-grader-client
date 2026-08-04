@@ -1,14 +1,13 @@
 // src/pages/AnswerKeyPage.jsx
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import MarksInput from '../components/MarksInput';
+import { useToast } from '../context/ToastContext'; // <-- Custom Toast
+import { formatBackendError } from '../utils/formatError';
 import api from '../api';
 
 const AnswerKeyPage = () => {
-  const { id } = useParams(); // If ID exists in URL, we are in EDIT mode!
-  const isEditMode = Boolean(id);
-
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('');
   const [questions, setQuestions] = useState([
@@ -19,44 +18,13 @@ const AnswerKeyPage = () => {
     { id: 5, answer: '', type: 'SHORT', marks: 1 },
   ]);
   const [isScanning, setIsScanning] = useState(false);
-  const [loading, setLoading] = useState(isEditMode);
   const navigate = useNavigate();
-
-  // If in Edit Mode, fetch existing Exam data from API
-  useEffect(() => {
-    if (isEditMode) {
-      const fetchExamForEdit = async () => {
-        try {
-          const response = await api.get(`/api/exams/${id}`);
-          const exam = response.data;
-          setTitle(exam.title);
-          setSubject(exam.subject || '');
-          
-          if (exam.questions && exam.questions.length > 0) {
-            setQuestions(
-              exam.questions.map(q => ({
-                id: q.id,
-                answer: q.correct_answer,
-                type: q.question_type,
-                marks: q.marks,
-              }))
-            );
-          }
-        } catch (error) {
-          console.error('Failed to load exam for editing:', error);
-          alert('Could not load exam data.');
-          navigate('/exams');
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchExamForEdit();
-    }
-  }, [id, isEditMode, navigate]);
+  const { showToast } = useToast();
+  const nativeCameraInputRef = useRef(null);
 
   const handleSave = async () => {
     if (!title.trim()) {
-      alert('Please enter a title for the exam.');
+      showToast('Please enter a title for the exam.', 'warning');
       return;
     }
     const payload = {
@@ -69,26 +37,12 @@ const AnswerKeyPage = () => {
         marks: q.marks,
       })),
     };
-
     try {
-      if (isEditMode) {
-        // PUT request to update
-        await api.put(`/api/exams/${id}`, payload);
-        alert('Answer key updated successfully!');
-      } else {
-        // POST request to create
-        await api.post('/api/exams', payload);
-        alert('Answer key saved successfully!');
-      }
+      await api.post('/api/exams', payload);
+      showToast('Answer key saved successfully!', 'success');
       navigate('/exams');
     } catch (error) {
-      if (error.response && error.response.status === 422) {
-        console.error('Validation Errors:', error.response.data.errors);
-        alert('Please make sure all answer fields are filled out.');
-      } else {
-        console.error('An error occurred:', error);
-        alert('An error occurred while saving. Please try again.');
-      }
+      showToast(`An error occurred while saving:\n${formatBackendError(error)}`, 'error');
     }
   };
 
@@ -107,60 +61,76 @@ const AnswerKeyPage = () => {
     return questions.reduce((total, q) => total + (Number(q.marks) || 0), 0);
   }, [questions]);
 
-  const onDrop = useCallback(async (acceptedFiles) => {
-    if (acceptedFiles.length === 0) return;
+  // Handle scanned images array
+  const processScannedImages = async (filesArray) => {
+    if (filesArray.length === 0) return;
     setIsScanning(true);
-    setTimeout(async () => {
-      const formData = new FormData();
-      acceptedFiles.forEach((file) => {
-        formData.append(`images[]`, file);
+    showToast('Scanning Answer Key with AI...', 'warning');
+
+    const formData = new FormData();
+    filesArray.forEach((file) => {
+      formData.append(`images[]`, file);
+    });
+
+    try {
+      const response = await api.post('/api/answer-keys/scan', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      try {
-        const response = await api.post('/api/answer-keys/scan', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
+      const scannedQuestions = response.data.questions;
+      const newQuestions = scannedQuestions.map((question, index) => ({
+        id: index + 1,
+        answer: question.answer,
+        type: ['MCQ', 'TF', 'SHORT', 'ESSAY', 'MATCH'].includes(question.type) ? question.type : 'SHORT',
+        marks: question.marks || 1,
+      }));
 
-        const scannedQuestions = response.data.questions;
-        const newQuestions = scannedQuestions.map((question, index) => ({
-          id: index + 1,
-          answer: question.answer,
-          type: ['MCQ', 'TF', 'SHORT', 'ESSAY', 'MATCH'].includes(question.type) ? question.type : 'SHORT',
-          marks: question.marks || 1,
-        }));
+      setQuestions(newQuestions);
+      showToast(`${scannedQuestions.length} questions scanned! Please review and save.`, 'success');
+    } catch (error) {
+      console.error("Failed to scan answer key:", error);
+      showToast(`Answer Key Scanning Error:\n${formatBackendError(error)}`, 'error');
+    } finally {
+      setIsScanning(false);
+    }
+  };
 
-        setQuestions(newQuestions);
-        alert(`${scannedQuestions.length} questions scanned successfully! Please review and save.`);
-      } catch (error) {
-        console.error('Failed to scan answer key:', error);
-        alert('An error occurred while scanning the answer key.');
-      } finally {
-        setIsScanning(false);
-      }
-    }, 10);
+  const onDrop = useCallback((acceptedFiles) => {
+    processScannedImages(acceptedFiles);
   }, []);
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const handleNativeCameraCapture = (e) => {
+    const capturedFiles = Array.from(e.target.files);
+    if (capturedFiles.length > 0) {
+      processScannedImages(capturedFiles);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive, open: openFileBrowser } = useDropzone({
     onDrop,
     accept: { 'image/jpeg': [], 'image/png': [] },
     multiple: true,
+    noClick: true,
   });
-
-  if (loading) {
-    return <div className="p-10 text-center text-white">Loading answer key data...</div>;
-  }
 
   return (
     <div className="flex-1 px-4 sm:px-6 lg:px-10 py-8">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-3xl md:text-4xl font-bold text-white">
-            {isEditMode ? 'Edit Answer Key' : 'Create Answer Key'}
-          </h1>
-          <p className="mt-2 text-subtle-text">
-            {isEditMode ? 'Update correct answers and question marks.' : 'Manually input answers or scan an image of the answer key.'}
-          </p>
+          <h1 className="text-3xl md:text-4xl font-bold text-white">Create Answer Key</h1>
+          <p className="mt-2 text-subtle-text">Manually input answers or scan an image of the answer key.</p>
         </div>
+
+        {/* Hidden Camera Input for Mobile */}
+        <input
+          ref={nativeCameraInputRef}
+          type="file"
+          accept="image/jpeg,image/png"
+          capture="environment"
+          multiple
+          className="hidden"
+          onChange={handleNativeCameraCapture}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 bg-surface p-6 rounded-2xl">
           <div>
@@ -178,8 +148,9 @@ const AnswerKeyPage = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-12">
+          {/* Manual Entry */}
           <div className="lg:col-span-3 flex flex-col gap-6">
-            <h2 className="text-2xl font-bold text-white">Question Details</h2>
+            <h2 className="text-2xl font-bold text-white">Manual Entry</h2>
             <div className="space-y-4">
               {questions.map((q, index) => (
                 <div key={q.id} className="grid grid-cols-1 md:grid-cols-10 gap-4 items-center">
@@ -205,15 +176,41 @@ const AnswerKeyPage = () => {
             </div>
           </div>
 
+          {/* Bulk Entry / Camera Scanner */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            <h2 className="text-2xl font-bold text-white">Scan from Image</h2>
-            <div {...getRootProps()} className={`flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-surface bg-surface/50 p-8 text-center transition-colors cursor-pointer hover:border-primary/50 ${isDragActive ? 'border-primary bg-primary/20' : ''}`}>
+            <h2 className="text-2xl font-bold text-white">Scan Answer Key</h2>
+            <div {...getRootProps()} className={`flex flex-1 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-surface bg-surface/50 p-8 text-center transition-colors ${isDragActive ? 'border-primary bg-primary/20' : ''}`}>
               <input {...getInputProps()} />
               <div className="mb-4"><span className="material-symbols-outlined text-5xl text-primary">upload_file</span></div>
-              {isScanning ? (<p className="text-lg font-bold text-white">Scanning...</p>) : (
+              {isScanning ? (
+                <div className="flex items-center gap-2 text-primary font-bold">
+                  <div className="size-5 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                  <span>AI Scanning Answer Key...</span>
+                </div>
+              ) : (
                 <>
-                  <h3 className="text-lg font-bold text-white">{isDragActive ? 'Drop images here...' : 'Drop answer key images'}</h3>
-                  <p className="text-sm text-subtle-text">or click to browse to replace current answers</p>
+                  <h3 className="text-lg font-bold text-white">{isDragActive ? "Drop images here..." : "Scan Answer Key Photos"}</h3>
+                  <p className="text-sm text-subtle-text mt-1">Take photo or upload image of answer key</p>
+
+                  <div className="mt-4 flex flex-wrap justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => nativeCameraInputRef.current?.click()}
+                      className="flex items-center gap-2 rounded-full bg-primary px-5 py-2.5 text-xs font-bold text-background transition-transform hover:scale-105"
+                    >
+                      <span className="material-symbols-outlined text-base">photo_camera</span>
+                      <span>Take Photo (Camera)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={openFileBrowser}
+                      className="flex items-center gap-2 rounded-full bg-surface px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-background border border-surface"
+                    >
+                      <span className="material-symbols-outlined text-base">folder_open</span>
+                      <span>Choose Files</span>
+                    </button>
+                  </div>
                 </>
               )}
             </div>
@@ -222,9 +219,7 @@ const AnswerKeyPage = () => {
 
         <div className="mt-12 flex justify-end gap-4">
           <button onClick={() => navigate('/exams')} className="rounded-full border border-solid border-surface px-6 py-3 text-sm font-bold text-white transition-colors hover:bg-surface">Cancel</button>
-          <button onClick={handleSave} className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-background transition-opacity hover:opacity-80">
-            {isEditMode ? 'Update Answer Key' : 'Save Answer Key'}
-          </button>
+          <button onClick={handleSave} className="rounded-full bg-primary px-6 py-3 text-sm font-bold text-background transition-opacity hover:opacity-80">Save Answer Key</button>
         </div>
       </div>
     </div>
