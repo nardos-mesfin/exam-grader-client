@@ -4,6 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { useNavigate, useLocation } from 'react-router-dom';
 import imageCompression from 'browser-image-compression';
 import { formatBackendError } from '../utils/formatError';
+import { useToast } from '../context/ToastContext';
 import api from '../api';
 
 // Helper to convert File/Blob into a permanent Base64 Data URL
@@ -32,6 +33,7 @@ const UploadPage = () => {
   // In-App Live Camera State
   const [isCameraOpen, setIsCameraOpen] = useState(false);
   const videoRef = useRef(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (selectedExam) {
@@ -156,13 +158,13 @@ const UploadPage = () => {
     }
   };
 
-  const handleUpload = async () => {
+   const handleUpload = async () => {
     if (!selectedExam) {
-      alert('Please select an Answer Key first.');
+      showToast('Please select an Answer Key first.', 'warning');
       return;
     }
     if (files.length === 0) {
-      alert('Please take a photo or select at least one page of the exam paper.');
+      showToast('Please take a photo or select at least one page.', 'warning');
       return;
     }
 
@@ -170,14 +172,12 @@ const UploadPage = () => {
     setUploadingStatusText('Preparing permanent previews...');
 
     try {
-      // 1. Generate permanent Data URLs for all captured photos
       const imagePreviews = await Promise.all(
         files.map((file) => fileToDataURL(file))
       );
 
       setUploadingStatusText('Optimizing photos...');
 
-      // 2. Compress files for API upload
       const compressedFiles = await Promise.all(
         files.map((file) => compressPhoto(file))
       );
@@ -196,20 +196,20 @@ const UploadPage = () => {
       });
 
       sessionStorage.removeItem('upload_selected_exam');
+      showToast('Exam graded successfully with AI!', 'success');
 
-      // 3. Navigate with unbreakable Data URLs!
       navigate('/exams/review', {
         state: {
           results: response.data.ai_results,
           answer_key: response.data.answer_key,
-          imagePreviews: imagePreviews, // Unbreakable Base64 Data URLs!
+          imagePreviews: imagePreviews,
           imagePreview: imagePreviews[0],
           examId: selectedExam,
         },
       });
     } catch (error) {
       console.error('Failed to process exam paper:', error);
-      alert(`AI Grading Error:\n\n${formatBackendError(error)}`);
+      showToast(`AI Grading Error:\n${formatBackendError(error)}`, 'error');
     } finally {
       setUploading(false);
     }

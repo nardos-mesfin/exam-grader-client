@@ -4,12 +4,16 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '../api';
 
 const ExamResultsListPage = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // Exam ID
   const navigate = useNavigate();
 
   const [exam, setExam] = useState(null);
   const [submissions, setSubmissions] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Search & Sort State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('latest'); // 'latest', 'highest', 'lowest', 'name_asc'
 
   const fetchResults = async () => {
     try {
@@ -30,6 +34,7 @@ const ExamResultsListPage = () => {
     fetchResults();
   }, [id]);
 
+  // Analytics Calculations
   const stats = useMemo(() => {
     if (submissions.length === 0 || !exam) {
       return { averagePct: 0, topPerformer: 'N/A', lowestScore: 0 };
@@ -48,6 +53,28 @@ const ExamResultsListPage = () => {
     return { averagePct, topPerformer, lowestScore };
   }, [submissions, exam]);
 
+  // Live Filter & Sort Submissions
+  const filteredSubmissions = useMemo(() => {
+    let list = submissions.filter((sub) =>
+      sub.student_name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
+    return list.sort((a, b) => {
+      if (sortBy === 'highest') {
+        return b.final_score - a.final_score;
+      }
+      if (sortBy === 'lowest') {
+        return a.final_score - b.final_score;
+      }
+      if (sortBy === 'name_asc') {
+        return a.student_name.localeCompare(b.student_name);
+      }
+      // Default: 'latest' (newest created_at date first)
+      return new Date(b.created_at) - new Date(a.created_at);
+    });
+  }, [submissions, searchQuery, sortBy]);
+
+  // Edit / Re-grade Student Submission Handler
   const handleEditSubmission = async (submissionId) => {
     try {
       const res = await api.get(`/api/exam-submissions/${submissionId}`);
@@ -79,6 +106,7 @@ const ExamResultsListPage = () => {
     }
   };
 
+  // Delete Student Result Handler
   const handleDeleteSubmission = async (submissionId, studentName) => {
     if (window.confirm(`Are you sure you want to delete the result for ${studentName}?`)) {
       try {
@@ -163,6 +191,39 @@ const ExamResultsListPage = () => {
           </div>
         </div>
 
+        {/* 👇 SEARCH & SORT FILTER BAR 👇 */}
+        {submissions.length > 0 && (
+          <div className="mb-6 grid grid-cols-1 sm:grid-cols-3 gap-4 bg-surface p-4 rounded-2xl border border-surface">
+            {/* Search Box */}
+            <div className="sm:col-span-2 relative">
+              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-subtle-text text-lg">
+                search
+              </span>
+              <input
+                type="text"
+                className="form-input w-full rounded-xl border border-background bg-background py-2.5 pl-10 pr-4 text-xs sm:text-sm text-white placeholder:text-subtle-text focus:border-primary focus:ring-0"
+                placeholder="Search student by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Sort Dropdown */}
+            <div>
+              <select
+                className="form-select block w-full rounded-xl border border-background bg-background px-4 py-2.5 text-xs sm:text-sm text-white focus:border-primary focus:ring-0"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="latest">Sort: Latest Graded Date</option>
+                <option value="highest">Sort: Highest Score First</option>
+                <option value="lowest">Sort: Lowest Score First</option>
+                <option value="name_asc">Sort: Alphabetical (A - Z)</option>
+              </select>
+            </div>
+          </div>
+        )}
+
         {/* Student Results Table */}
         {submissions.length === 0 ? (
           <div className="rounded-2xl border-2 border-dashed border-surface bg-surface/30 p-8 sm:p-12 text-center">
@@ -178,6 +239,10 @@ const ExamResultsListPage = () => {
               Grade First Student
             </button>
           </div>
+        ) : filteredSubmissions.length === 0 ? (
+          <div className="rounded-2xl border border-surface bg-surface/40 p-8 text-center text-subtle-text text-sm">
+            No students found matching "{searchQuery}".
+          </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-surface bg-surface shadow-md">
             <div className="overflow-x-auto w-full">
@@ -192,7 +257,7 @@ const ExamResultsListPage = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-background/50">
-                  {submissions.map((sub) => {
+                  {filteredSubmissions.map((sub) => {
                     const totalPossible = sub.total_possible_marks || exam.total_marks || 1;
                     const pct = Math.round((sub.final_score / totalPossible) * 100);
 
@@ -216,7 +281,7 @@ const ExamResultsListPage = () => {
                           </span>
                         </td>
                         <td className="whitespace-nowrap px-4 sm:px-6 py-3.5 text-xs text-subtle-text">
-                          {new Date(sub.created_at).toLocaleDateString()}
+                          {new Date(sub.created_at).toLocaleString()}
                         </td>
                         <td className="whitespace-nowrap px-4 sm:px-6 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-2">
