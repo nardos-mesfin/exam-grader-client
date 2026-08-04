@@ -30,7 +30,7 @@ export const formatBackendError = (error) => {
   
     const str = String(rawMessage);
   
-    // 2. Shortcuts for common AI / Server timeouts
+    // 2. Smart Shortcuts for common API/Server errors
     if (str.includes('RESOURCE_EXHAUSTED') || str.includes('Quota exceeded')) {
       return 'Quota Exceeded: Gemini AI free daily limit reached.';
     }
@@ -41,13 +41,8 @@ export const formatBackendError = (error) => {
       return 'Server Timeout: AI request took too long. Please try again.';
     }
   
-    // 3. For ANY OTHER UNKNOWN ERROR:
-    // Clean up technical PHP/SQL code clutter and return up to 180 characters
-    const cleanStr = str
-      .replace(/^[a-zA-Z0-9_\\\]*Exception:\s*/, '') // Removes "Symfony\...\QueryException:"
-      .replace(/^SQLSTATE\[.*?\]:\s*/, '')          // Removes "SQLSTATE[HY000]:"
-      .replace(/[\r\n]+/g, ' ')                      // Replaces newlines with spaces
-      .trim();
+    // 3. For any other error, clean up newlines and return up to 180 characters
+    const cleanStr = str.replace(/[\r\n]+/g, ' ').trim();
   
     return cleanStr.length > 180 ? `${cleanStr.substring(0, 177)}...` : cleanStr;
   };
